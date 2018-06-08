@@ -73,6 +73,7 @@ def reply_to_pm(reddit):
 
 #Get the list of comments the bot has replied to
 def get_replied_comments():
+    print("Loading replied comments list...")
     if not os.path.isfile("replied_comments.txt"):
         replied_comments = []
     else:
@@ -83,6 +84,14 @@ def get_replied_comments():
     
     return replied_comments
 
+#Delete comment if it has score of less than -1
+def delete_downvoted_comment(reddit):
+    user = reddit.user.me()
+    for comment in user.comments.new(limit=50):
+        if comment.score < -1:
+            print("Deleting comment due karma threshold: " + comment.id)
+            comment.delete()
+
 reddit = login()
 replied_comments = get_replied_comments()
 translator = Translator()
@@ -90,5 +99,6 @@ translator = Translator()
 while True:
     translate_comments(reddit, replied_comments, translator, 10)
     reply_to_pm(reddit)
+    delete_downvoted_comment(reddit)
     print("Sleeping...")
     time.sleep(5)
