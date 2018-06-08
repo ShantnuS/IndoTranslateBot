@@ -2,3 +2,4 @@
 *.bot
 config.py
 replied_comments.txt
+__pycache__
