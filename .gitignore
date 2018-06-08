@@ -3,3 +3,4 @@
 config.py
 replied_comments.txt
 __pycache__
+activity_log.txt
