@@ -3,9 +3,13 @@ import config
 import time
 import os
 from googletrans import Translator 
+import preconfig
+from praw.models import Message
 
+#List of languages that the bot translates. Language codes from https://cloud.google.com/translate/docs/languages
 languages = ["hi", "ml", "ta", "te", "ur", "gu", "bn", "kn", "mr", "ne", "pa"]
 
+#Checks if language is on the languages list
 def is_indo_lang(language):
     global languages
     if language in languages:
@@ -13,7 +17,12 @@ def is_indo_lang(language):
     else:
         return False
 
+#Creates the formatted reply for a translation
+def get_formatted_text(translation):
+    formatted_text = ">" + translation + preconfig.comment_subtext
+    return formatted_text
 
+#Logs into reddit with the details in config.py
 def login():
     print("Trying to log in...")
     reddit = praw.Reddit(username = config.username,
@@ -24,17 +33,19 @@ def login():
     print("Logged in!")
     return reddit
 
-def run(reddit, replied_comments, translator):
+#Translates comments if they are in certain language and replies with english translation
+def translate_comments(reddit, replied_comments, translator, my_limit):
     print("Running bot...")
-    for comment in reddit.subreddit('test').comments(limit=10):
+    for comment in reddit.subreddit('india').comments(limit=my_limit):
         try:
             mytext = str(comment.body)
             detection = translator.detect(mytext)
             if is_indo_lang(detection.lang) and comment.id not in replied_comments and comment.author != reddit.user.me():
-                print("Replied to: " + comment.author.name + " ,comment was in: " + detection.lang)
+                print("Replied to: " + comment.author.name + ", comment was in: " + detection.lang)
                 translation = translator.translate(mytext).text
                 #print("Translation was: " + translation)
-                comment.reply(translation)
+                reply_text = get_formatted_text(translation)
+                comment.reply(reply_text)
 
                 replied_comments.append(comment.id)
 
@@ -43,6 +54,17 @@ def run(reddit, replied_comments, translator):
         except Exception as e:
             print("ERROR - " + str(e))
 
+#Reply to any Private Messages
+def reply_to_pm(reddit):
+    unread_messages = []
+    for pm in reddit.inbox.unread():
+        pm.author.message("I am just a bot!", preconfig.pm_message)
+        print("Replied to a PM from: " + pm.author.name)
+        if isinstance(pm, Message):
+            unread_messages.append(pm)
+    reddit.inbox.mark_read(unread_messages)
+
+#Get the list of comments the bot has replied to
 def get_replied_comments():
     if not os.path.isfile("replied_comments.txt"):
         replied_comments = []
@@ -59,6 +81,7 @@ replied_comments = get_replied_comments()
 translator = Translator()
 
 while True:
-    run(reddit, replied_comments, translator)
+    translate_comments(reddit, replied_comments, translator, 10)
+    reply_to_pm(reddit)
     print("Sleeping...")
     time.sleep(5)
