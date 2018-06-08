@@ -5,6 +5,7 @@ import os
 from googletrans import Translator 
 import preconfig
 from praw.models import Message
+from praw.models import Comment
 
 #List of languages that the bot translates. Language codes from https://cloud.google.com/translate/docs/languages
 languages = ["hi", "ml", "ta", "te", "ur", "gu", "bn", "kn", "mr", "ne", "pa"]
@@ -58,9 +59,9 @@ def translate_comments(reddit, replied_comments, translator, my_limit):
 def reply_to_pm(reddit):
     unread_messages = []
     for pm in reddit.inbox.unread():
-        pm.author.message("I am just a bot!", preconfig.pm_message)
-        print("Replied to a PM from: " + pm.author.name)
-        if isinstance(pm, Message):
+        if isinstance(pm, Message) or isinstance(pm, Comment):
+            pm.author.message("I am just a bot!", preconfig.pm_message)
+            print("Replied to a PM from: " + pm.author.name)
             unread_messages.append(pm)
     reddit.inbox.mark_read(unread_messages)
 
@@ -82,6 +83,6 @@ translator = Translator()
 
 while True:
     translate_comments(reddit, replied_comments, translator, 10)
-    #reply_to_pm(reddit)
+    reply_to_pm(reddit)
     print("Sleeping...")
     time.sleep(5)
