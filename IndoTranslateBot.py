@@ -1,6 +1,7 @@
 import praw
 import config
 import time
+import datetime
 import os
 from googletrans import Translator 
 import preconfig
@@ -23,6 +24,12 @@ def get_formatted_text(translation):
     formatted_text = ">" + translation + preconfig.comment_subtext
     return formatted_text
 
+def log_activity(log_text):
+    ts = time.time()
+    timestamp = str(datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
+    with open("activity_log.txt", "a") as writer:
+        writer.write(timestamp + " -- " + log_text)
+
 #Logs into reddit with the details in config.py
 def login():
     print("Trying to log in...")
@@ -44,6 +51,7 @@ def translate_comments(reddit, replied_comments, translator, my_limit):
                 detection = translator.detect(mytext)
                 if is_indo_lang(detection.lang) and comment.author != reddit.user.me():
                     print("Replied to: " + comment.author.name + ", comment was in: " + detection.lang + ", confidence of: " + str(float(detection.confidence)))
+                    log_activity("Replied to: " + comment.author.name + ", comment was in: " + detection.lang + ", confidence of: " + str(float(detection.confidence)))
                     translation = translator.translate(mytext).text
                     #print("Translation was: " + translation)
                     reply_text = get_formatted_text(translation)
@@ -68,6 +76,7 @@ def reply_to_pm(reddit):
         if isinstance(pm, Message) or isinstance(pm, Comment):
             pm.author.message("I am just a bot!", preconfig.pm_message)
             print("Replied to a PM from: " + pm.author.name)
+            log_activity("Replied to a PM from: " + pm.author.name)
             unread_messages.append(pm)
     reddit.inbox.mark_read(unread_messages)
 
@@ -90,8 +99,11 @@ def delete_downvoted_comment(reddit):
     for comment in user.comments.new(limit=50):
         if comment.score < -1:
             print("Deleting comment due karma threshold: " + comment.id)
+            log_activity("Deleting comment due karma threshold: " + comment.id)
             comment.delete()
 
+#START
+print(config.user_agent)
 reddit = login()
 replied_comments = get_replied_comments()
 translator = Translator()
