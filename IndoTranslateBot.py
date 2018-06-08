@@ -39,21 +39,27 @@ def translate_comments(reddit, replied_comments, translator, my_limit):
     print("Running bot...")
     for comment in reddit.subreddit('india').comments(limit=my_limit):
         try:
-            mytext = str(comment.body)
-            detection = translator.detect(mytext)
-            if is_indo_lang(detection.lang) and comment.id not in replied_comments and comment.author != reddit.user.me():
-                print("Replied to: " + comment.author.name + ", comment was in: " + detection.lang)
-                translation = translator.translate(mytext).text
-                #print("Translation was: " + translation)
-                reply_text = get_formatted_text(translation)
-                comment.reply(reply_text)
+            if comment.id not in replied_comments:
+                mytext = str(comment.body)
+                detection = translator.detect(mytext)
+                if is_indo_lang(detection.lang) and comment.author != reddit.user.me():
+                    print("Replied to: " + comment.author.name + ", comment was in: " + detection.lang + ", confidence of: " + str(float(detection.confidence)))
+                    translation = translator.translate(mytext).text
+                    #print("Translation was: " + translation)
+                    reply_text = get_formatted_text(translation)
+                    comment.reply(reply_text)
 
-                replied_comments.append(comment.id)
+                    replied_comments.append(comment.id)
 
-                with open("replied_comments.txt", "a") as writer:
-                    writer.write(comment.id + "\n")
+                    with open("replied_comments.txt", "a") as writer:
+                        writer.write(comment.id + "\n")
         except Exception as e:
             print("ERROR - " + str(e))
+
+            replied_comments.append(comment.id)
+
+            with open("replied_comments.txt", "a") as writer:
+                writer.write(comment.id + "\n")
 
 #Reply to any Private Messages
 def reply_to_pm(reddit):
