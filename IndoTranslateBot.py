@@ -82,6 +82,6 @@ translator = Translator()
 
 while True:
     translate_comments(reddit, replied_comments, translator, 10)
-    reply_to_pm(reddit)
+    #reply_to_pm(reddit)
     print("Sleeping...")
     time.sleep(5)
