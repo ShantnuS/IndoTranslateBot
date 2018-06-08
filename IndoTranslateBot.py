@@ -26,7 +26,7 @@ def login():
 
 def run(reddit, replied_comments, translator):
     print("Running bot...")
-    for comment in reddit.subreddit('test').comments(limit=5):
+    for comment in reddit.subreddit('test').comments(limit=10):
         try:
             mytext = str(comment.body)
             detection = translator.detect(mytext)
@@ -40,8 +40,8 @@ def run(reddit, replied_comments, translator):
 
                 with open("replied_comments.txt", "a") as writer:
                     writer.write(comment.id + "\n")
-        except:
-            print("ERROR: comment was not in correct format!")
+        except Exception as e:
+            print("ERROR - " + str(e))
 
 def get_replied_comments():
     if not os.path.isfile("replied_comments.txt"):
