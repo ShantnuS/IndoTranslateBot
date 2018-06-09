@@ -7,9 +7,11 @@ from googletrans import Translator
 import preconfig
 from praw.models import Message
 from praw.models import Comment
+import re
 
 #List of languages that the bot translates. Language codes from https://cloud.google.com/translate/docs/languages
 languages = ["hi", "ml", "ta", "te", "ur", "gu", "bn", "kn", "mr", "ne", "pa"]
+RE_EMOJI = re.compile('[\U00010000-\U0010ffff]', flags=re.UNICODE)
 
 #Checks if language is on the languages list
 def is_indo_lang(language):
@@ -24,6 +26,7 @@ def get_formatted_text(translation):
     formatted_text = "> " + translation + preconfig.comment_subtext
     return formatted_text
 
+#Logs activity onto activity_log.txt
 def log_activity(log_text):
     ts = time.time()
     print(log_text)
@@ -42,7 +45,12 @@ def login():
     print("Logged in!")
     return reddit
 
-#Translates comments if they are in certain language and replies with english translation
+#Removes emojis from text. Found here https://gist.github.com/Alex-Just/e86110836f3f93fe7932290526529cd1
+def strip_emoji(text):
+    return RE_EMOJI.sub(r'', text)
+
+#Translates comments if they are in certain language and replies with english translation 
+##LEGACY
 def translate_comments(reddit, replied_comments, translator, my_limit):
     print("Running bot...")
     for comment in reddit.subreddit('india').comments(limit=my_limit):
@@ -68,6 +76,37 @@ def translate_comments(reddit, replied_comments, translator, my_limit):
 
             with open("replied_comments.txt", "a") as writer:
                 writer.write(comment.id + "\n")
+
+#Translates when "!translate" is called
+def translate_on_request(reddit, replied_comments, translator, my_limit):
+    print("Running bot...")
+    for comment in reddit.subreddit('india').comments(limit=my_limit):
+        try:
+            if comment.id not in replied_comments:
+                mytext = strip_emoji(str(comment.body))
+                if "!translate" in mytext.lower():
+                    par = comment.parent()
+                    parent_text = strip_emoji(str(par.body))
+                    detection = translator.detect(parent_text)
+                    if is_indo_lang(detection.lang) and comment.author != reddit.user.me():
+                        log_activity("Replied to: " + par.author.name + ", comment was in: " + detection.lang + ", confidence of: " + str(float(detection.confidence)))
+                        translation = translator.translate(parent_text).text
+                        #print("Translation was: " + translation)
+                        reply_text = get_formatted_text(translation)
+                        comment.reply(reply_text)
+
+                        replied_comments.append(comment.id)
+
+                        with open("replied_comments.txt", "a") as writer:
+                            writer.write(comment.id + "\n")
+        except Exception as e:
+            print("ERROR - " + str(e))
+
+            replied_comments.append(comment.id)
+
+            with open("replied_comments.txt", "a") as writer:
+                writer.write(comment.id + "\n")
+
 
 #Reply to any Private Messages
 def reply_to_pm(reddit):
@@ -108,7 +147,8 @@ replied_comments = get_replied_comments()
 translator = Translator()
 
 while True:
-    translate_comments(reddit, replied_comments, translator, 10)
+    #translate_comments(reddit, replied_comments, translator, 10) #This is not used because it's too spammy
+    translate_on_request(reddit, replied_comments, translator, 10)
     reply_to_pm(reddit)
     delete_downvoted_comment(reddit)
     print("Sleeping...")
