@@ -21,14 +21,15 @@ def is_indo_lang(language):
 
 #Creates the formatted reply for a translation
 def get_formatted_text(translation):
-    formatted_text = ">" + translation + preconfig.comment_subtext
+    formatted_text = ">(" + translation + ")" + preconfig.comment_subtext
     return formatted_text
 
 def log_activity(log_text):
     ts = time.time()
+    print(log_text)
     timestamp = str(datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
     with open("activity_log.txt", "a") as writer:
-        writer.write(timestamp + " -- " + log_text)
+        writer.write(timestamp + " -- " + log_text + "\n")
 
 #Logs into reddit with the details in config.py
 def login():
@@ -50,7 +51,6 @@ def translate_comments(reddit, replied_comments, translator, my_limit):
                 mytext = str(comment.body)
                 detection = translator.detect(mytext)
                 if is_indo_lang(detection.lang) and comment.author != reddit.user.me():
-                    print("Replied to: " + comment.author.name + ", comment was in: " + detection.lang + ", confidence of: " + str(float(detection.confidence)))
                     log_activity("Replied to: " + comment.author.name + ", comment was in: " + detection.lang + ", confidence of: " + str(float(detection.confidence)))
                     translation = translator.translate(mytext).text
                     #print("Translation was: " + translation)
@@ -75,7 +75,6 @@ def reply_to_pm(reddit):
     for pm in reddit.inbox.unread():
         if isinstance(pm, Message) or isinstance(pm, Comment):
             pm.author.message("I am just a bot!", preconfig.pm_message)
-            print("Replied to a PM from: " + pm.author.name)
             log_activity("Replied to a PM from: " + pm.author.name)
             unread_messages.append(pm)
     reddit.inbox.mark_read(unread_messages)
@@ -96,9 +95,8 @@ def get_replied_comments():
 #Delete comment if it has score of less than -1
 def delete_downvoted_comment(reddit):
     user = reddit.user.me()
-    for comment in user.comments.new(limit=50):
+    for comment in user.comments.controversial(limit=50):
         if comment.score < -1:
-            print("Deleting comment due karma threshold: " + comment.id)
             log_activity("Deleting comment due karma threshold: " + comment.id)
             comment.delete()
 
