@@ -1,5 +1,6 @@
 *.key
 *.bot
+*.old
 config.py
 replied_comments.txt
 __pycache__
