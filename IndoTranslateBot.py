@@ -21,7 +21,7 @@ def is_indo_lang(language):
 
 #Creates the formatted reply for a translation
 def get_formatted_text(translation):
-    formatted_text = ">(" + translation + ")" + preconfig.comment_subtext
+    formatted_text = "> " + translation + preconfig.comment_subtext
     return formatted_text
 
 def log_activity(log_text):
@@ -73,7 +73,8 @@ def translate_comments(reddit, replied_comments, translator, my_limit):
 def reply_to_pm(reddit):
     unread_messages = []
     for pm in reddit.inbox.unread():
-        if isinstance(pm, Message) or isinstance(pm, Comment):
+        if isinstance(pm, Message):
+		#or isinstance(pm, Comment):
             pm.author.message("I am just a bot!", preconfig.pm_message)
             log_activity("Replied to a PM from: " + pm.author.name)
             unread_messages.append(pm)
